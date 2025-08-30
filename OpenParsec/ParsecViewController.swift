@@ -30,8 +30,13 @@ class ParsecViewController :UIViewController {
 	var keyboardAccessoriesView : UIView?
 	var keyboardHeight : CGFloat = 0.0
 	
+	private var isPointerLocked = SettingsHandler.cursorMode != .direct
 	override var prefersPointerLocked: Bool {
-		return true
+		return isPointerLocked
+	}
+	func setPointerLocked(_ enabled: Bool) {
+		isPointerLocked = enabled
+		setNeedsUpdateOfPrefersPointerLocked()
 	}
 	
 	override var prefersHomeIndicatorAutoHidden : Bool {
@@ -49,6 +54,17 @@ class ParsecViewController :UIViewController {
 	
 	required init?(coder: NSCoder) {
 		fatalError("init(coder:) has not been implemented")
+	}
+	
+	override var keyCommands: [UIKeyCommand]? {
+		guard SettingsHandler.cursorMode == .direct else { return nil }
+		let command = UIKeyCommand(
+			input: "Q",
+			modifierFlags: [.command, .alternate, .shift],
+			action: #selector(exitPointerLock)
+		)
+		command.discoverabilityTitle = "Exit Pointer Lock"
+		return [command]
 	}
 	
 	func updateImage() {
@@ -73,6 +89,19 @@ class ParsecViewController :UIViewController {
 		touchController.viewDidLoad()
 		gamePadController.viewDidLoad()
 		
+		if SettingsHandler.cursorMode == .direct {
+			let enterLockGR = UITapGestureRecognizer(target: self, action: #selector(enterPointerLock))
+			enterLockGR.numberOfTapsRequired = 1
+			enterLockGR.numberOfTouchesRequired = 1
+			enterLockGR.cancelsTouchesInView = false
+			enterLockGR.buttonMaskRequired = .primary
+			enterLockGR.allowedTouchTypes = [
+				NSNumber(value: UITouch.TouchType.direct.rawValue),
+				NSNumber(value: UITouch.TouchType.indirectPointer.rawValue)
+			]
+			view.addGestureRecognizer(enterLockGR)
+		}
+
 		u = UIImageView(frame: CGRect(x: 0,y: 0,width: 100, height: 100))
 		view.addSubview(u!)
 		
@@ -129,6 +158,18 @@ class ParsecViewController :UIViewController {
 			object: nil
 		)
 		
+	}
+	
+	@objc private func enterPointerLock(_ gr: UITapGestureRecognizer) {
+		guard gr.state == .ended, !isPointerLocked else { return }
+		setPointerLocked(true)
+		CParsec.setInputEnabled(true)
+	}
+
+	@objc private func exitPointerLock() {
+		guard isPointerLocked else { return }
+		setPointerLocked(false)
+		CParsec.setInputEnabled(false)
 	}
 	
 	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -286,7 +327,7 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 	
 extension ParsecViewController : UIPointerInteractionDelegate {
 	func pointerInteraction(_ interaction: UIPointerInteraction, styleFor region: UIPointerRegion) -> UIPointerStyle? {
-		return UIPointerStyle.hidden()
+		return isPointerLocked ? .hidden() : nil
 	}
 
 

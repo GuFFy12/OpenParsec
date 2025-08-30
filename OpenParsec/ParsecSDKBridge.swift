@@ -34,6 +34,36 @@ struct KeyBoardKeyEvent {
 
 class ParsecSDKBridge: ParsecService
 {
+	private var inputEnabled: Bool = false
+	
+	public func setInputEnabled(_ enabled: Bool) {
+		if !enabled {
+			releaseAllModifiers()
+		}
+		inputEnabled = enabled
+	}
+	
+	private func releaseAllModifiers() {
+		let modifiers: [UIKeyboardHIDUsage] = [
+			.keyboardLeftControl,
+			.keyboardLeftShift,
+			.keyboardLeftAlt,
+			.keyboardLeftGUI,
+			.keyboardRightControl,
+			.keyboardRightShift,
+			.keyboardRightAlt,
+			.keyboardRightGUI
+		]
+		
+		for mod in modifiers {
+			var msg = ParsecMessage()
+			msg.type = MESSAGE_KEYBOARD
+			msg.keyboard.code = ParsecKeycode(UInt32(mod.rawValue))
+			msg.keyboard.pressed = false
+			ParsecClientSendMessage(_parsec, &msg)
+		}
+	}
+	
 	var hostWidth: Float = 1920
 	
 	var hostHeight: Float = 1080
@@ -282,6 +312,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendMouseMessage(_ button:ParsecMouseButton, _ x:Int32, _ y:Int32, _ pressed:Bool)
 	{
+		guard inputEnabled else { return }
 		// Send the mouse position
 		sendMousePosition(x, y)
 		
@@ -294,6 +325,7 @@ class ParsecSDKBridge: ParsecService
 	}
 	
 	func sendMouseClickMessage(_ button:ParsecMouseButton, _ pressed:Bool) {
+		guard inputEnabled else { return }
 		var buttonMessage = ParsecMessage()
 		buttonMessage.type = MESSAGE_MOUSE_BUTTON
 		buttonMessage.mouseButton.button = button
@@ -315,6 +347,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendMousePosition(_ x:Int32, _ y:Int32)
 	{
+		guard inputEnabled else { return }
 		mouseInfo.mouseX = ParsecSDKBridge.clamp(x, minValue: 0, maxValue: Int32(self.clientWidth))
 		mouseInfo.mouseY = ParsecSDKBridge.clamp(y, minValue: 0, maxValue: Int32(self.clientHeight))
 		var motionMessage = ParsecMessage()
@@ -326,6 +359,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendMouseRelativeMove(_ dx:Int32, _ dy:Int32)
 	{
+		guard inputEnabled else { return }
 		var motionMessage = ParsecMessage()
 		motionMessage.type = MESSAGE_MOUSE_MOTION
 		motionMessage.mouseMotion.x = dx
@@ -365,6 +399,7 @@ class ParsecSDKBridge: ParsecService
 	}
 	
 	func sendVirtualKeyboardInput(text: String) {
+		guard inputEnabled else { return }
 		let (keyCode, useShift) = getKeyCodeByText(text: text)
 		
 		guard let keyCode else {
@@ -393,6 +428,7 @@ class ParsecSDKBridge: ParsecService
 	}
 	
 	func sendVirtualKeyboardInput(text: String, isOn: Bool) {
+		guard inputEnabled else { return }
 		let (keyCode, _) = getKeyCodeByText(text: text)
 		
 		guard let keyCode else {
@@ -413,6 +449,7 @@ class ParsecSDKBridge: ParsecService
 
 	func sendKeyboardMessage(event:KeyBoardKeyEvent)
 	{
+		guard inputEnabled else { return }
 		if event.input == nil {
 			return
 		}
@@ -426,6 +463,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendGameControllerButtonMessage(controllerId:UInt32, _ button:ParsecGamepadButton, pressed:Bool)
 	{
+		guard inputEnabled else { return }
 		var pmsg = ParsecMessage()
 		pmsg.type = MESSAGE_GAMEPAD_BUTTON
 		pmsg.gamepadButton.id = controllerId
@@ -446,6 +484,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendGameControllerAxisMessage(controllerId:UInt32, _ button:ParsecGamepadAxis, _ value: Int16)
 	{
+		guard inputEnabled else { return }
 	    var pmsg = ParsecMessage()
 		pmsg.type = MESSAGE_GAMEPAD_AXIS
 		pmsg.gamepadAxis.id = controllerId
@@ -456,6 +495,7 @@ class ParsecSDKBridge: ParsecService
 	
 	func sendGameControllerUnplugMessage(controllerId:UInt32)
 	{
+		guard inputEnabled else { return }
 	    var pmsg = ParsecMessage()
 		pmsg.type = MESSAGE_GAMEPAD_UNPLUG;
 		pmsg.gamepadUnplug.id = controllerId;
@@ -463,6 +503,7 @@ class ParsecSDKBridge: ParsecService
 	}
 	
 	func sendWheelMsg(x: Int32, y: Int32) {
+		guard inputEnabled else { return }
 		var pmsg = ParsecMessage()
 		pmsg.type = MESSAGE_MOUSE_WHEEL;
 		pmsg.mouseWheel.x = x

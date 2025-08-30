@@ -64,6 +64,7 @@ protocol ParsecService {
 	var hostHeight: Float { get }
 	var mouseInfo: MouseInfo { get }
 	
+	func setInputEnabled(_ enabled: Bool)
 	func connect(_ peerID: String) -> ParsecStatus
 	func disconnect()
 	func getStatus() -> ParsecStatus
@@ -119,6 +120,10 @@ class CParsec
 	static func destroy()
 	{
 		
+	}
+	
+	static func setInputEnabled(_ enable: Bool) {
+		parsecImpl.setInputEnabled(enable)
 	}
 
 	static func connect(_ peerID:String) -> ParsecStatus

@@ -23,7 +23,6 @@
 //	func updateUIViewController(_ uiViewController:GLKViewController, context:UIViewControllerRepresentableContext<ParsecGLKViewController>) { }
 //}
 
-import UIKit
 import GLKit
 
 class ParsecGLKViewController : ParsecPlayground {
